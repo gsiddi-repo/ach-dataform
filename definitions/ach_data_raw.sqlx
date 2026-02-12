@@ -1,0 +1,5 @@
+config {
+  type: "declaration",
+  schema: "ach_bc50_raw",
+  name: "ach_data_raw"
+}
