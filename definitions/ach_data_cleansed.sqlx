@@ -1,5 +1,6 @@
 config {
   type: "table",
+  database: "innov-jrfr-fizq-1",
   schema: "ach_bc50_cleansed",
   name: "ach_data_cleansed",
   description: "Cleansed ACH table populated from raw",

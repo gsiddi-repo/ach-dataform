@@ -1,0 +1,49 @@
+config {
+  type: "operations",
+  database: "innov-jrfr-fizq-1",
+  schema: "ach_bc50_cleansed",
+  name: "bankname_standardization",
+  description: "Standardizing the bank names"
+}
+
+MERGE ${ref("ach_data_cleansed")} T
+USING (
+  WITH updates AS (
+    SELECT
+      ach.customer_identifier,
+      ach.customer_account,
+      ach.posting_date,
+      ach.transaction_amount,
+      ach.originator_routing_number,
+      ach.receiver_routing_number,
+      map.bank_name,
+      CASE
+        WHEN ach.originator_routing_number = map.routing_number THEN 'originator'
+        WHEN ach.receiver_routing_number = map.routing_number THEN 'receiver'
+      END AS bank_type
+    FROM ${ref("ach_data_cleansed")} AS ach
+    JOIN ${ref("ach_routing_bankmap")} AS map
+      ON ach.originator_routing_number = map.routing_number OR ach.receiver_routing_number = map.routing_number
+  )
+  SELECT
+    customer_identifier,
+    customer_account,
+    posting_date,
+    transaction_amount,
+    originator_routing_number,
+    receiver_routing_number,
+    MAX(IF(bank_type = 'originator', bank_name, NULL)) AS originator_bank,
+    MAX(IF(bank_type = 'receiver', bank_name, NULL)) AS receiver_bank
+  FROM updates
+  GROUP BY 1, 2, 3, 4, 5, 6
+) S
+ON T.customer_identifier = S.customer_identifier
+   AND T.customer_account = S.customer_account
+   AND T.posting_date = S.posting_date
+   AND T.transaction_amount = S.transaction_amount
+   AND T.originator_routing_number = S.originator_routing_number
+   AND T.receiver_routing_number = S.receiver_routing_number
+WHEN MATCHED THEN
+  UPDATE SET
+    T.originator_bank_imp = COALESCE(S.originator_bank, T.originator_bank_imp),
+    T.receiver_bank_imp = COALESCE(S.receiver_bank, T.receiver_bank_imp)

@@ -1,5 +1,6 @@
 config {
   type: "table",
+  database: "innov-jrfr-fizq-1",
   schema: "ach_bc50_curated",
   name: "ach_data_curated",
   description: "Curated ACH table populated from Cleansed",
@@ -58,5 +59,22 @@ select
   originator_bank_imp,
   receiver_bank_imp,
   transaction_counterparty_imp,
-  DIRTY_TAGS
+  DIRTY_TAGS,
+  (CASE WHEN transaction_class_code <> 'ON-US'
+      AND transaction_flow_direction = 'Originated by WingsBank'
+      AND debit_financial_institution = receiver_bank THEN 'DR'
+    WHEN transaction_class_code <> 'ON-US'
+      AND transaction_flow_direction = 'Originated by WingsBank'
+      AND debit_financial_institution = originator_bank THEN 'CR'
+    WHEN transaction_class_code <> 'ON-US'
+      AND transaction_flow_direction  = 'Received by WingsBank'
+      AND debit_financial_institution = originator_bank THEN 'DR'
+     WHEN transaction_class_code <> 'ON-US'
+      AND transaction_flow_direction = 'Received by WingsBank'
+     AND debit_financial_institution = receiver_bank THEN 'CR' 
+     WHEN transaction_class_code = 'ON-US'
+      AND debit_party_identifier = CAST(source_account_identifier AS STRING) THEN 'DR'
+     WHEN transaction_class_code = 'ON-US'
+      AND credit_party_identifier = CAST(source_account_identifier AS STRING) THEN 'CR' 
+    ELSE NULL END) AS transaction_flow_direction_derived
 from ${ref("ach_data_cleansed")}

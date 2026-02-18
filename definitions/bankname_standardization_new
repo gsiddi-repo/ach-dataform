@@ -1,0 +1,28 @@
+config {
+  type: "operations",
+  database: "innov-jrfr-fizq-1",
+  schema: "ach_bc50_cleansed",
+  name: "bankname_standardization_new",
+  description: "Standardizing the bank names"
+}
+
+UPDATE ${ref("ach_data_cleansed")} AS T
+SET 
+  originator_bank_imp = (
+    SELECT S.bank_name
+    FROM ${ref("ach_routing_bankmap")} AS S
+    WHERE S.routing_number = T.originator_routing_number
+  ),
+  receiver_bank_imp = (
+    SELECT S.bank_name
+    FROM ${ref("ach_routing_bankmap")} AS S
+    WHERE S.routing_number = T.receiver_routing_number
+  )
+WHERE 
+  T.originator_routing_number IN (
+    SELECT routing_number FROM ${ref("ach_routing_bankmap")}
+  )
+  OR
+  T.receiver_routing_number IN (
+    SELECT routing_number FROM ${ref("ach_routing_bankmap")}
+  );

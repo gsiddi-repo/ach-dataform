@@ -2,5 +2,5 @@ config {
   type: "declaration",
   database: "innov-jrfr-fizq-1",
   schema: "ach_bc50_raw",
-  name: "ach_data_raw"
+  name: "ach_routing_bankmap"
 }
