@@ -1,0 +1,37 @@
+
+config {
+  type: "assertion",
+  name: "ach_data_cleansed_validation",
+  tags: ["validation", "cleansed"],
+  description: "Validate transformations in ach_data_cleansed."
+}
+
+-- This assertion will fail if any of the following conditions are met:
+-- 1. bank_client_name in ach_data_cleansed has leading or trailing spaces.
+-- 2. originator_bank_derived is null, which means the originator_routing_number was not found in the bank map.
+-- 3. receiver_bank_derived is null, which means the receiver_routing_number was not found in the bank map.
+WITH failed_rows AS (
+    SELECT
+        'untrimmed bank_client_name' AS validation_error
+    FROM ${ref("ach_data_cleansed")}
+    WHERE bank_client_name <> TRIM(bank_client_name)
+
+    UNION ALL
+
+    SELECT
+        'originator_routing_number not found' AS validation_error
+    FROM ${ref("ach_data_cleansed")}
+    WHERE
+        originator_routing_number IS NOT NULL
+        AND originator_bank_derived IS NULL
+
+    UNION ALL
+
+    SELECT
+        'receiver_routing_number not found' AS validation_error
+    FROM ${ref("ach_data_cleansed")}
+    WHERE
+        receiver_routing_number IS NOT NULL
+        AND receiver_bank_derived IS NULL
+)
+SELECT * FROM failed_rows

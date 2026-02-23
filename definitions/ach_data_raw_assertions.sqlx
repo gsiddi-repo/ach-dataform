@@ -1,0 +1,29 @@
+
+config {
+  type: "assertion",
+  name: "ach_data_raw_validation",
+  tags: ["validation", "raw"],
+  description: "Validate data types in ach_data_raw before cleansing."
+}
+
+-- This assertion will fail if any of the following conditions are met:
+-- 1. customer_funds_indicator in ach_data_raw could not be cast to a BOOL but is not NULL.
+-- 2. transaction_amount in ach_data_raw could not be cast to a FLOAT64 but is not NULL.
+WITH failed_rows AS (
+    SELECT
+        'invalid customer_funds_indicator' AS validation_error
+    FROM ${ref("ach_data_raw")}
+    WHERE
+        customer_funds_indicator IS NOT NULL
+        AND SAFE_CAST(customer_funds_indicator AS BOOL) IS NULL
+
+    UNION ALL
+
+    SELECT
+        'invalid transaction_amount' AS validation_error
+    FROM ${ref("ach_data_raw")}
+    WHERE
+        transaction_amount IS  NULL
+        AND SAFE_CAST(transaction_amount AS FLOAT64) IS NOT NULL
+)
+SELECT * FROM failed_rows
