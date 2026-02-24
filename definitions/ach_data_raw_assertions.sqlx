@@ -2,7 +2,7 @@
 config {
   type: "assertion",
   name: "ach_data_raw_validation",
-  tags: ["validation", "raw"],
+  tags: ["validation", "raw", "production"],
   description: "Validate data types in ach_data_raw before cleansing."
 }
 

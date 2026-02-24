@@ -5,7 +5,7 @@ config {
     schema: "dataform_assertions",
     name: "ach_data_curated_validation",
     description: "Validate transformations in ach_data_curated.",
-    tags: ["validation", "curated"]
+    tags: ["validation", "curated", "production"]
 }
 
 -- This assertion will fail if any of the following conditions are met:

@@ -2,7 +2,7 @@
 config {
   type: "assertion",
   name: "ach_data_cleansed_validation",
-  tags: ["validation", "cleansed"],
+  tags: ["validation", "cleansed", "production"],
   description: "Validate transformations in ach_data_cleansed."
 }
 
