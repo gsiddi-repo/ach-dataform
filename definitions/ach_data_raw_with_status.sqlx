@@ -1,0 +1,25 @@
+
+config {
+  type: "view",
+  schema: "dataform",
+  name: "ach_data_raw_with_status",
+  description: "Raw ACH data with a record status based on validation checks."
+}
+
+WITH failed_rows AS (
+    SELECT
+        sequence_number
+    FROM ${ref("ach_data_raw")}
+    WHERE
+        transaction_amount IS NOT NULL
+        AND SAFE_CAST(transaction_amount AS FLOAT64) IS NULL
+)
+SELECT
+  t1.*,
+  CASE
+    WHEN t2.sequence_number IS NOT NULL THEN 'bad'
+    ELSE 'good'
+  END AS record_status
+FROM ${ref("ach_data_raw")} AS t1
+LEFT JOIN failed_rows AS t2
+  ON t1.sequence_number = t2.sequence_number
