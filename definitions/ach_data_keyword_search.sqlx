@@ -1,0 +1,150 @@
+config {
+  type: "table",
+  database: "innov-jrfr-fizq-1",
+  schema: "ach_bc50_curated",
+  name: "ach_data_kws_results",
+  description: "Keyword search results populated from Curated ACH table",
+  columns: {
+    date_inserted: "The date when the record was inserted."
+  }
+}
+
+WITH
+  filtered_keywords AS (
+    -- Step 1: Pre-filter keywords that are not empty, null, or irrelevant
+    SELECT
+      keyword AS `Flagged Keyword(s)`,
+      industry_code AS `Industry_Code`,
+      long_segment AS `Industry_Segment`
+    FROM `innov-jrfr-fizq-1.ach_bc50_raw.keyword_csoi`
+    WHERE LENGTH(keyword) > 0
+  ),
+  pattern_matching AS (
+    -- Step 2: Join keywords and transactions, check for exact matches using regex
+    SELECT
+      t.*,
+      k.`Flagged Keyword(s)`,
+      k.`Industry_Code`,
+      k.`Industry_Segment`,
+      -- Each column is evaluated independently — all matches are preserved
+      -- Each column is evaluated independently — all matches are preserved
+      CASE WHEN REGEXP_CONTAINS(t.transaction_counterparty, r'(?i)' || k.`Flagged Keyword(s)`) THEN 'transaction_counterparty' ELSE NULL END AS matched_column_1,
+      CASE WHEN REGEXP_CONTAINS(t.payee_identifier_label,   r'(?i)' || k.`Flagged Keyword(s)`) THEN 'payee_identifier_label'   ELSE NULL END AS matched_column_2,
+      CASE WHEN REGEXP_CONTAINS(t.credit_party,             r'(?i)' || k.`Flagged Keyword(s)`) THEN 'credit_party'             ELSE NULL END AS matched_column_3,
+      CASE WHEN REGEXP_CONTAINS(t.debit_party,              r'(?i)' || k.`Flagged Keyword(s)`) THEN 'debit_party'              ELSE NULL END AS matched_column_4,
+      CASE WHEN REGEXP_CONTAINS(t.external_company_name,    r'(?i)' || k.`Flagged Keyword(s)`) THEN 'external_company_name'   ELSE NULL END AS matched_column_5
+    FROM `innov-jrfr-fizq-1.ach_bc50_raw.ach-kwdata-raw` t
+    JOIN filtered_keywords k
+      ON REGEXP_CONTAINS(t.transaction_counterparty, r'(?i)' || k.`Flagged Keyword(s)`)
+      OR REGEXP_CONTAINS(t.payee_identifier_label,   r'(?i)' || k.`Flagged Keyword(s)`)
+      OR REGEXP_CONTAINS(t.credit_party,             r'(?i)' || k.`Flagged Keyword(s)`)
+      OR REGEXP_CONTAINS(t.debit_party,              r'(?i)' || k.`Flagged Keyword(s)`)
+      OR REGEXP_CONTAINS(t.external_company_name,    r'(?i)' || k.`Flagged Keyword(s)`)
+  ),
+  final_results AS (
+    -- Step 3: Aggregate — each matched_column_N is fed into STRING_AGG separately
+    SELECT
+      pm.customer_identifier,
+      pm.bank_client_name,
+      pm.customer_account,
+      pm.customer_account_type,
+      pm.customer_funds_indicator,
+      pm.transaction_counterparty,
+      pm.debit_party_identifier,
+      pm.debit_financial_institution,
+      pm.transaction_processor_party,
+      pm.transaction_processor_party_role,
+      pm.credit_party_identifier,
+      pm.credit_bank,
+      pm.transaction_flow_direction,
+      pm.ach_company_identifier,
+      pm.file_owner_id,
+      pm.ach_company_name,
+      pm.external_company_name,
+      pm.file_identifier,
+      pm.ach_settlement_account,
+      pm.transaction_class_code,
+      pm.movement_type_indicator,
+      pm.source_account_identifier,
+      pm.payee_identifier,
+      pm.payee_identifier_label,
+      pm.posting_date,
+      pm.originator_routing_number,
+      pm.originator_bank,
+      pm.receiver_routing_number,
+      pm.receiver_bank,
+      pm.batch_text,
+      pm.entry_code,
+      pm.transaction_amount,
+      pm.batch_comment_text,
+      pm.transaction_text,
+      pm.payment_interval,
+      pm.perfect_receivable,
+      pm.batch_post_identifier,
+      pm.file_distribution_reference,
+      pm.sequence_number,
+      pm.perfect_receivable_account_number,
+      pm.perfect_receivable_company_name,
+      pm.target_account_number,
+      pm.target_account_type,
+      pm.conc_payment_group,
+      pm.top_20,
+      pm.DIRTY_APPLIED_50PCT,
+      pm.originator_bank_imp,
+      pm.receiver_bank_imp,
+      pm.transaction_counterparty_imp,
+      pm.DIRTY_TAGS,
+      pm.debit_party,
+      pm.credit_party,
+      -- Aggregated keyword/industry columns (unchanged)
+      STRING_AGG(DISTINCT pm.`Flagged Keyword(s)`, ' | ') AS matched_keywords,
+      STRING_AGG(DISTINCT pm.`Industry_Code`,       ' | ') AS industries,
+      STRING_AGG(DISTINCT pm.`Industry_Segment`,    ' | ') AS industry_segments,
+
+      -- FIX: Each column is passed to STRING_AGG independently.
+      -- Previously, a single CASE block returned only the first non-null match,
+      -- silently dropping any additional columns where the keyword also appeared.
+      -- Now all five are unioned so every hit is captured before deduplication.
+      STRING_AGG(DISTINCT col_hit, ' | ') AS matched_columns
+
+    FROM pattern_matching pm
+    -- Unnest all five match columns into individual rows so STRING_AGG sees each one
+    CROSS JOIN UNNEST([
+      pm.matched_column_1,
+      pm.matched_column_2,
+      pm.matched_column_3,
+      pm.matched_column_4,
+      pm.matched_column_5
+    ]) AS col_hit
+    -- After unnesting, filter to only the rows where a match actually existed
+    WHERE col_hit IS NOT NULL
+    GROUP BY
+      pm.customer_identifier, pm.bank_client_name, pm.customer_account,
+      pm.customer_account_type, pm.customer_funds_indicator,
+      pm.transaction_counterparty, pm.debit_party, pm.debit_party_identifier,
+      pm.debit_financial_institution, pm.transaction_processor_party,
+      pm.transaction_processor_party_role, pm.credit_party,
+      pm.credit_party_identifier, pm.credit_bank, pm.transaction_flow_direction,
+      pm.ach_company_identifier, pm.file_owner_id, pm.ach_company_name,
+      pm.external_company_name, pm.file_identifier, pm.ach_settlement_account,
+      pm.transaction_class_code, pm.movement_type_indicator,
+      pm.source_account_identifier, pm.payee_identifier,
+      pm.payee_identifier_label, pm.posting_date, pm.originator_routing_number,
+      pm.originator_bank, pm.receiver_routing_number, pm.receiver_bank,
+      pm.batch_text, pm.entry_code, pm.transaction_amount,
+      pm.batch_comment_text, pm.transaction_text, pm.payment_interval,
+      pm.perfect_receivable, pm.batch_post_identifier,
+      pm.file_distribution_reference, pm.sequence_number,
+      pm.perfect_receivable_account_number, pm.perfect_receivable_company_name,
+      pm.target_account_number, pm.target_account_type, pm.conc_payment_group,
+      pm.top_20, pm.DIRTY_APPLIED_50PCT, pm.originator_bank_imp,
+      pm.receiver_bank_imp, pm.transaction_counterparty_imp, pm.DIRTY_TAGS
+  )
+SELECT
+  fr.*,
+  --fr.matched_keywords,
+  --fr.industries,
+  --fr.industry_segments,
+  --fr.matched_columns
+FROM final_results fr
+ORDER BY fr.customer_account, fr.transaction_counterparty
