@@ -19,10 +19,12 @@ select
   raw.customer_account_type,
   raw.customer_funds_indicator,
   raw.transaction_counterparty,
+  raw.debit_party,
   raw.debit_party_identifier,
   raw.debit_financial_institution,
   raw.transaction_processor_party,
   raw.transaction_processor_party_role,
+  raw.credit_party,
   raw.credit_party_identifier,
   raw.credit_bank,
   raw.transaction_flow_direction,
@@ -64,7 +66,7 @@ select
   originator_map.bank_name as originator_bank_derived,
   receiver_map.bank_name as receiver_bank_derived,
   CURRENT_DATE() as date_inserted
-from ${ref("ach_data_raw")} as raw
+from ${ref("ach-kwdata-raw")} as raw
 LEFT JOIN ${ref("ach_routing_bankmap")} AS originator_map
   ON raw.originator_routing_number = originator_map.routing_number
 LEFT JOIN ${ref("ach_routing_bankmap")} AS receiver_map

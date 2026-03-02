@@ -11,7 +11,7 @@ config {
 WITH failed_rows AS (
     SELECT
         'invalid transaction_amount' AS validation_error
-    FROM ${ref("ach_data_raw")}
+    FROM ${ref("ach-kwdata-raw")}
     WHERE
         transaction_amount IS NOT NULL
         AND SAFE_CAST(transaction_amount AS FLOAT64) IS NULL
