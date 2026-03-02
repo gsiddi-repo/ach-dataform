@@ -16,7 +16,7 @@ WITH
       keyword AS `Flagged Keyword(s)`,
       industry_code AS `Industry_Code`,
       long_segment AS `Industry_Segment`
-    FROM `innov-jrfr-fizq-1.ach_bc50_raw.keyword_csoi`
+    FROM  ${ref("keyword_csoi")}
     WHERE LENGTH(keyword) > 0
   ),
   pattern_matching AS (
@@ -33,7 +33,7 @@ WITH
       CASE WHEN REGEXP_CONTAINS(t.credit_party,             r'(?i)' || k.`Flagged Keyword(s)`) THEN 'credit_party'             ELSE NULL END AS matched_column_3,
       CASE WHEN REGEXP_CONTAINS(t.debit_party,              r'(?i)' || k.`Flagged Keyword(s)`) THEN 'debit_party'              ELSE NULL END AS matched_column_4,
       CASE WHEN REGEXP_CONTAINS(t.external_company_name,    r'(?i)' || k.`Flagged Keyword(s)`) THEN 'external_company_name'   ELSE NULL END AS matched_column_5
-    FROM `innov-jrfr-fizq-1.ach_bc50_raw.ach-kwdata-raw` t
+    FROM  ${ref("ach_data_curated")} as t
     JOIN filtered_keywords k
       ON REGEXP_CONTAINS(t.transaction_counterparty, r'(?i)' || k.`Flagged Keyword(s)`)
       OR REGEXP_CONTAINS(t.payee_identifier_label,   r'(?i)' || k.`Flagged Keyword(s)`)
@@ -90,8 +90,8 @@ WITH
       pm.conc_payment_group,
       pm.top_20,
       pm.DIRTY_APPLIED_50PCT,
-      pm.originator_bank_imp,
-      pm.receiver_bank_imp,
+      --pm.originator_bank_imp,
+      --pm.receiver_bank_imp,
       pm.transaction_counterparty_imp,
       pm.DIRTY_TAGS,
       pm.debit_party,
@@ -137,8 +137,9 @@ WITH
       pm.file_distribution_reference, pm.sequence_number,
       pm.perfect_receivable_account_number, pm.perfect_receivable_company_name,
       pm.target_account_number, pm.target_account_type, pm.conc_payment_group,
-      pm.top_20, pm.DIRTY_APPLIED_50PCT, pm.originator_bank_imp,
-      pm.receiver_bank_imp, pm.transaction_counterparty_imp, pm.DIRTY_TAGS
+      pm.top_20, pm.DIRTY_APPLIED_50PCT,
+      --pm.originator_bank_imp,pm.receiver_bank_imp, 
+      pm.transaction_counterparty_imp, pm.DIRTY_TAGS
   )
 SELECT
   fr.*,
