@@ -2,5 +2,5 @@ config {
   type: "declaration",
   database: "innov-jrfr-fizq-1",
   schema: "ach_bc50_raw",
-  name: "keyword_csoi"
+  name: "keyword_csoi_v2"
 }

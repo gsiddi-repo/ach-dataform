@@ -16,7 +16,7 @@ WITH
       keyword AS `Flagged Keyword(s)`,
       industry_code AS `Industry_Code`,
       long_segment AS `Industry_Segment`
-    FROM  ${ref("keyword_csoi")}
+    FROM  ${ref("keyword_csoi_v2")}
     WHERE LENGTH(keyword) > 0
   ),
   pattern_matching AS (
