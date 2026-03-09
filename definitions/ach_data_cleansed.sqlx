@@ -2,5 +2,5 @@ config {
   type: "declaration",
   database: "innov-jrfr-fizq-1",
   schema: "ach_bc50_cleansed",
-  name: "ach_data_cleansed"
+  name: "ach_data_hybrid_cleansed"
 }

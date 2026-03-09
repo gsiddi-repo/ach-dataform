@@ -2,7 +2,7 @@ config {
   type: "table",
   database: "innov-jrfr-fizq-1",
   schema: "ach_bc50_curated",
-  name: "ach_data_curated",
+  name: "ach_data_curated_hybrid",
   description: "Curated ACH table populated from Cleansed",
   bigquery: {
     partitionBy: "posting_date"
@@ -83,4 +83,4 @@ select
         END
     ELSE cleansed.movement_type_indicator
   END AS movement_type_indicator_derived
-from ${ref("ach_data_cleansed")} as cleansed
+from ${ref("ach_data_hybrid_cleansed")} as cleansed

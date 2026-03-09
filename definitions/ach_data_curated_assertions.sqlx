@@ -15,7 +15,7 @@ WITH failed_rows AS (
     
     SELECT
         'null movement_type_indicator_derived' AS validation_error
-    FROM ${ref("ach_data_curated")}
+    FROM ${ref("ach_data_curated_hybrid")}
     WHERE movement_type_indicator_derived IS NULL and movement_type_indicator_derived IS NOT NULL
 )
 SELECT * FROM failed_rows
