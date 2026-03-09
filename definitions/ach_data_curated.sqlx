@@ -63,8 +63,8 @@ select
   cleansed.DIRTY_APPLIED_50PCT,
   cleansed.transaction_counterparty_imp,
   cleansed.DIRTY_TAGS,
-  cleansed.originator_bank_derived,
-  cleansed.receiver_bank_derived,
+  cleansed.originator_bank_imp_std,
+  cleansed.receiver_bank_imp_std,
   CURRENT_DATE() as date_inserted,
   CASE
     WHEN cleansed.transaction_class_code <> 'ON-US' THEN
