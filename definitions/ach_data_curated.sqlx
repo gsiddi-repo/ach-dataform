@@ -39,7 +39,7 @@ select
   cleansed.source_account_identifier,
   cleansed.payee_identifier,
   cleansed.payee_identifier_label,
-  cleansed.posting_date,
+  SAFE.PARSE_DATE('%Y-%m-%d', cleansed.posting_date) as posting_date,
   cleansed.originator_routing_number,
   cleansed.receiver_routing_number,
   cleansed.originator_bank,
